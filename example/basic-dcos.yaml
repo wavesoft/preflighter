@@ -1,0 +1,45 @@
+# A title for this checklist
+title: Example
+
+# Don't even start if any of the following binaries do not exist on $PATH
+require_tools:
+  - curl
+
+# A list of environment variables that (if missing from env) will be forwarded
+# to all of the scripts used
+vars:
+  LOGIN_USER: centos
+
+# A list of items to visually confirm
+checklist:
+
+  - title: "Is cluster URL correct?"
+
+    # This script is executed for this pre-flight check, and the `stdout` is
+    # presented to the user for a visual confirmation.
+    # The `stderr` pipe is collected and presented to the user if something
+    # goes wrong. Feel free to echo debug information there.
+    script: |
+      dcos config show core.dcos_url
+
+    # [Optional] An "expect" expression can be used to validate the output of the script
+    # when running in unattended mode
+    expect: "^https://.*mwt.*\\.scaletesting\\.mesosphe\\.re$"
+
+  - title: "Is the DC/OS version correct?"
+    script: |
+      cached_cluster_curl dcos-metadata/dcos-version.json | jq -r .version
+
+    # (There is neither an `expect` nor a `expect_script` field, then this
+    #  check will be skipped when running in unattended mode)
+
+  - title: "Are there enough agents?"
+
+    # You can use various functions from the built-in bash function library,
+    # for instance `cached_cluster_curl`
+    script: |
+      PRIVATE=$(cached_cluster_curl system/health/v1/nodes | jq '[.nodes[] | select(.role == "agent")] | length')
+      PUBLIC=$(cached_cluster_curl system/health/v1/nodes | jq '[.nodes[] | select(.role == "agent_public")] | length')
+      TOTAL=$PRIVATE+$PUBLIC
+      echo "$TOTAL ($PRIVATE Private / $PUBLIC Public)"
+
