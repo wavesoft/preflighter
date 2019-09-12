@@ -1,6 +1,8 @@
 # preflighter
 A utility for executing interactive pre-flight checks
 
+![example](docs/preflighter.gif)
+
 ## Installation
 
 ```
