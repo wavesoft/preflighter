@@ -8,7 +8,7 @@ var BashLibrary = `
 # Shorthand to 'curl -H <Auth> <DCOS_URL>/'
 function cluster_curl() {
   local URL=$1; shift
-  curl $* -k -f -L -s -H "Authorization: token=${DCOS_ACS_TOKEN}" ${DCOS_URL}/${URL}
+  curl $* -k -f -L -sS -H "Authorization: token=${DCOS_ACS_TOKEN}" ${DCOS_URL}/${URL}
 }
 function cached_cluster_curl() {
   local URL=$1; shift
@@ -18,7 +18,7 @@ function cached_cluster_curl() {
   if [ ! -f "${CACHE_FILE}" ]; then
     cluster_curl $URL $* > ${CACHE_FILE}
     RET=$?
-    if [ $RET != 0 ]; then
+    if [ $RET -ne 0 ]; then
       rm ${CACHE_FILE}
       return $RET
     fi

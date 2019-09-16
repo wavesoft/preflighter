@@ -19,7 +19,6 @@ func runItemScript(item *ChecklistItem, runner *Runner) (string, string, error) 
 	}
 
 	sout = strings.Trim(sout, "\r\n\t ")
-
 	return sout, serr, err
 }
 
@@ -31,7 +30,6 @@ func canCheckItem(item *ChecklistItem) bool {
  * Runs the item's automatic checks
  */
 func checkItemValue(item *ChecklistItem, runner *Runner, value string) (bool, string, error) {
-
 	// If there is a script, call-out to the given script to compute
 	// if the result obtained is valid
 	if item.ExpectScript != "" {
