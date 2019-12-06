@@ -143,7 +143,7 @@ func rewindLine() {
 }
 
 func printLine(status int, title string, value interface{}, prompt string) {
-	icon := " "
+	icon := "  "
 	wrapText := func(v interface{}) interface{} { return v }
 
 	switch status {

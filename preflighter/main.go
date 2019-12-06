@@ -21,16 +21,6 @@ func main() {
 		return
 	}
 
-	config, err := CreateConfig()
-	if err != nil {
-		uxPrintError(err)
-		return
-	}
-
-	if *fTempDir != "" {
-		config.UserTempDir = *fTempDir
-	}
-
 	// Read the checklists from the given arguments
 	var checklists []*ChecklistFile
 	for _, fname := range flag.Args() {
@@ -39,12 +29,6 @@ func main() {
 			uxPrintError(err)
 			return
 		}
-		err = config.AddChecklistFile(checklist)
-		if err != nil {
-			uxPrintError(err)
-			return
-		}
-
 		checklists = append(checklists, checklist)
 	}
 
@@ -58,14 +42,14 @@ func main() {
 					continue
 				}
 
-				cmd := value[2 : len(value)-3]
-				out, err := exec.Command(cmd).Output()
+				cmd := value[2 : len(value)-1]
+				out, err := exec.Command("bash", "-c", cmd).Output()
 				if err != nil {
 					failed = true
 					uxPrintError(fmt.Errorf("Unable to execute '%s': %s", cmd, err.Error()))
 				}
 
-				file.Env[key] = string(out)
+				file.Env[key] = strings.TrimRight(string(out), "\n\r\t ")
 
 			} else if value == "<" {
 				if os.Getenv(key) == "" {
@@ -94,6 +78,23 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Prepare configuration
+	config, err := CreateConfig()
+	if err != nil {
+		uxPrintError(err)
+		return
+	}
+	if *fTempDir != "" {
+		config.UserTempDir = *fTempDir
+	}
+	for _, checklist := range checklists {
+		err = config.AddChecklistFile(checklist)
+		if err != nil {
+			uxPrintError(err)
+			return
+		}
+	}
+
 	// Create the runner component that executes scripts in a well-prepared
 	// environment.
 	runner, err := CreateRunner(config)
@@ -105,7 +106,7 @@ func main() {
 	// Check if all the required utilities exst
 	missing := runner.getMissingTools()
 	if len(missing) > 0 {
-		uxPrintError(fmt.Errorf("There are missing binaries from your environment:"))
+		uxPrintError(fmt.Errorf("There are missing executables from your path:"))
 		for _, name := range missing {
 			fmt.Printf(" ‣ Did not find '%s'\n", name)
 		}
