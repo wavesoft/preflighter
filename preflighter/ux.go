@@ -158,6 +158,7 @@ func printLine(status int, title string, value interface{}, prompt string) {
 		icon = "✅"
 		wrapText = func(v interface{}) interface{} { return Bold(Green(v)) }
 	case SKIP:
+		icon = "  "
 		wrapText = func(v interface{}) interface{} { return Yellow(v) }
 	}
 

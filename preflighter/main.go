@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
 	. "github.com/logrusorgru/aurora"
 )
@@ -44,6 +46,37 @@ func main() {
 		}
 
 		checklists = append(checklists, checklist)
+	}
+
+	// Check for required environment variables
+	failed := false
+	for _, file := range checklists {
+		for key, value := range file.Env {
+			if strings.HasPrefix(value, "${") {
+				if len(value) < 3 {
+					file.Env[key] = ""
+					continue
+				}
+
+				cmd := value[2 : len(value)-3]
+				out, err := exec.Command(cmd).Output()
+				if err != nil {
+					failed = true
+					uxPrintError(fmt.Errorf("Unable to execute '%s': %s", cmd, err.Error()))
+				}
+
+				file.Env[key] = string(out)
+
+			} else if value == "<" {
+				if os.Getenv(key) == "" {
+					failed = true
+					uxPrintError(fmt.Errorf("Missing required %s environment variable", key))
+				}
+			}
+		}
+	}
+	if failed {
+		os.Exit(1)
 	}
 
 	// Check if we should just list and exit
