@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"bufio"
@@ -45,7 +45,7 @@ func (r *Runner) Cleanup() {
 /**
  * Return a list of tools that are required, yet not found in path
  */
-func (r *Runner) getMissingTools() []string {
+func (r *Runner) GetMissingTools() []string {
 	var missing []string
 	var tools []string = []string{
 		"awk",
@@ -126,9 +126,9 @@ func (r *Runner) RunWithValue(script string, value string) (string, string, erro
 
 	ssout, err := ioutil.ReadAll(stdout)
 	if err != nil {
-		return "", "", fmt.Errorf("Unable to read stderr: %s", err.Error())
+		return "", "", fmt.Errorf("Unable to read stdout: %s", err.Error())
 	}
-	stderr.Close()
+	stdout.Close()
 
 	err = cmd.Wait()
 	if err != nil {

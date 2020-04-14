@@ -1,4 +1,4 @@
-package main
+package util
 
 //
 // The following snippet contains a list of bash functions that will be

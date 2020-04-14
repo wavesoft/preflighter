@@ -10,7 +10,7 @@ Preflighter is a command-line utility that makes it simple to run small _probe_ 
 You can use `go get` to install the `preflighter` executable.
 
 ```sh
-go get github.com/wavesoft/preflighter/preflighter
+go get github.com/mesosphere-incubator/preflighter
 ```
 
 ## Usage
@@ -29,6 +29,44 @@ The _preflighter_ will invoke the probe scripts for each test case and prompt th
 * Pressing `v` shows the `stderr` output (useful for debugging)
 
 If a test has failed, the operator has the chance to re-start it.
+
+## Tutorial
+
+This short guide will help you getting started with writing your own custom checklist files. 
+
+In all of the examples we are assuming that you are saving it's contents to a `checklist.yaml` file in your current working directory.
+
+
+### 1. Simple Checklist
+
+The following checklist demonstrates a very simple checklist:
+
+```yaml
+title: My Checklist
+checklist:
+  - title: "Does the date look correct?"
+    script: |
+      date
+```
+
+We are giving a `title` to our checklist, and we are adding a single item to the `checklist` array.
+
+Each checklist `script` is assumed to be any valid `bash` script. It can be as complex as you like but it must return a single line on stdout. In our example, we are invoking the `date` command and we are asking the user to confirm.
+
+You can run the checklist with `preflighter checklist.yaml`. This will display the following prompt:
+
+```
+==========================================
+ My Checklist Pre-Flight Checklist
+==========================================
+
+  ❔  Does the date look correct?         : Tue Mar 31 18:38:35 CEST 2020                                : OK? [Y/n/s/v]
+```
+
+
+### 2. Items that take long to complete
+
+
 
 ## Syntax
 

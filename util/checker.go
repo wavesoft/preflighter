@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 /**
  * Runs the given item script and returns the stdount/stderr
  */
-func runItemScript(item *ChecklistItem, runner *Runner) (string, string, error) {
+func RunItemScript(item *ChecklistItem, runner *Runner) (string, string, error) {
 	sout, serr, err := runner.Run(item.Script)
 	if err != nil {
 		if xerr, ok := err.(*exec.ExitError); ok {
@@ -22,7 +22,7 @@ func runItemScript(item *ChecklistItem, runner *Runner) (string, string, error) 
 	return sout, serr, err
 }
 
-func canCheckItem(item *ChecklistItem) bool {
+func CanCheckItem(item *ChecklistItem) bool {
 	return item.ExpectScript != "" || item.ExpectMatch != ""
 }
 
@@ -59,8 +59,8 @@ func checkItemValue(item *ChecklistItem, runner *Runner, value string) (bool, st
 /**
  * Runs the item's automatic checks
  */
-func runItemCheck(item *ChecklistItem, runner *Runner) (string, string, bool, error) {
-	value, serr, err := runItemScript(item, runner)
+func RunItemCheck(item *ChecklistItem, runner *Runner) (string, string, bool, error) {
+	value, serr, err := RunItemScript(item, runner)
 	if err != nil {
 		return "", "", false, err
 	}

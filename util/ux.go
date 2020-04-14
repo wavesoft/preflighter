@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"bufio"
@@ -40,7 +40,7 @@ func getWidth() uint {
 	return uint(ws.Col)
 }
 
-type uxPendingMonitor struct {
+type UxPendingMonitor struct {
 	item          *ChecklistItem
 	spinner       *spinner.Spinner
 	started       time.Time
@@ -50,11 +50,11 @@ type uxPendingMonitor struct {
 	lineCount     int
 }
 
-func createPendingMonitor(item *ChecklistItem, expandTimeout time.Duration) *uxPendingMonitor {
+func createPendingMonitor(item *ChecklistItem, expandTimeout time.Duration) *UxPendingMonitor {
 	sp := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
 	lineCount := 8
 
-	return &uxPendingMonitor{
+	return &UxPendingMonitor{
 		item:          item,
 		spinner:       sp,
 		expandTimeout: expandTimeout,
@@ -64,13 +64,13 @@ func createPendingMonitor(item *ChecklistItem, expandTimeout time.Duration) *uxP
 	}
 }
 
-func (m *uxPendingMonitor) Start() {
+func (m *UxPendingMonitor) Start() {
 	printLine(PENDING, m.item.Title, "", "")
 	m.spinner.Start()
 	m.started = time.Now()
 }
 
-func (m *uxPendingMonitor) Stop() {
+func (m *UxPendingMonitor) Stop() {
 	if m.expanded {
 		m.collapseLines()
 		m.expanded = false
@@ -78,7 +78,7 @@ func (m *uxPendingMonitor) Stop() {
 	m.spinner.Stop()
 }
 
-func (m *uxPendingMonitor) HandleLine(line string) {
+func (m *UxPendingMonitor) HandleLine(line string) {
 	// Shift liens and collect the new line
 	for i := 0; i < m.lineCount-1; i++ {
 		m.lines[i] = m.lines[i+1]
@@ -93,14 +93,14 @@ func (m *uxPendingMonitor) HandleLine(line string) {
 	}
 }
 
-func (m *uxPendingMonitor) collapseLines() {
+func (m *UxPendingMonitor) collapseLines() {
 	for i := 0; i < 3+m.lineCount; i++ {
 		fmt.Printf("\r\x1B[K\n")
 	}
 	fmt.Printf("\x1B[%dA\r", 3+m.lineCount)
 }
 
-func (m *uxPendingMonitor) printLines() {
+func (m *UxPendingMonitor) printLines() {
 	fmt.Println()
 	fmt.Println(Bold("     ╒ Progress"))
 	for _, line := range m.lines {
@@ -109,7 +109,7 @@ func (m *uxPendingMonitor) printLines() {
 	fmt.Println(Bold("     ╘ ∙∙∙"))
 }
 
-func (m *uxPendingMonitor) redrawLines() {
+func (m *UxPendingMonitor) redrawLines() {
 	m.spinner.Lock()
 	m.collapseLines()
 	m.printLines()
@@ -120,7 +120,7 @@ func (m *uxPendingMonitor) redrawLines() {
 	m.spinner.Unlock()
 }
 
-func (m *uxPendingMonitor) expand() {
+func (m *UxPendingMonitor) expand() {
 	if m.expanded {
 		return
 	}
@@ -183,26 +183,26 @@ func printBlock(block string, title string) {
 	fmt.Println(Bold("     ╘ ●"))
 }
 
-func uxPrintError(err error) {
+func UxPrintError(err error) {
 	fmt.Println(Bold(Red("ERROR:")), Bold(White(err.Error())))
 }
 
-func uxBlankItem(item *ChecklistItem) {
+func UxBlankItem(item *ChecklistItem) {
 	printLine(BLANK, item.Title, "---", "---")
 	fmt.Println()
 }
 
-func uxSkipItem(item *ChecklistItem, reason string) {
+func UxSkipItem(item *ChecklistItem, reason string) {
 	printLine(SKIP, item.Title, "---", reason)
 	fmt.Println()
 }
 
-func uxPassItem(item *ChecklistItem, value string) {
+func UxPassItem(item *ChecklistItem, value string) {
 	printLine(SUCCESS, item.Title, value, "PASS")
 	fmt.Println()
 }
 
-func uxFailItem(item *ChecklistItem, value string, cerr string) {
+func UxFailItem(item *ChecklistItem, value string, cerr string) {
 	printLine(ERROR, item.Title, value, "FAIL")
 	fmt.Println()
 	printBlock(item.Script, "Script")
@@ -210,12 +210,12 @@ func uxFailItem(item *ChecklistItem, value string, cerr string) {
 	fmt.Println()
 }
 
-func uxCheckItem(item *ChecklistItem, runner *Runner) bool {
+func UxCheckItem(item *ChecklistItem, runner *Runner) bool {
 	for {
 		moni := createPendingMonitor(item, 10*time.Second)
 		moni.Start()
 		runner.StderrCallback = moni.HandleLine
-		sout, serr, err := runItemScript(item, runner)
+		sout, serr, err := RunItemScript(item, runner)
 		moni.Stop()
 		if err != nil {
 			rewindLine()

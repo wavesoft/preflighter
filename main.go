@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	. "github.com/logrusorgru/aurora"
+	. "github.com/mesosphere-incubator/preflighter/util"
 )
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 	fAutoPtr := flag.Bool("a", false, "run the tests unattended")
 	flag.Parse()
 	if len(flag.Args()) == 0 {
-		uxPrintError(fmt.Errorf("Please specify one or more checklists to process"))
+		UxPrintError(fmt.Errorf("Please specify one or more checklists to process"))
 		return
 	}
 
@@ -26,7 +27,7 @@ func main() {
 	for _, fname := range flag.Args() {
 		checklist, err := LoadChecklist(fname)
 		if err != nil {
-			uxPrintError(err)
+			UxPrintError(err)
 			return
 		}
 		checklists = append(checklists, checklist)
@@ -46,7 +47,7 @@ func main() {
 				out, err := exec.Command("bash", "-c", cmd).Output()
 				if err != nil {
 					failed = true
-					uxPrintError(fmt.Errorf("Unable to execute '%s': %s", cmd, err.Error()))
+					UxPrintError(fmt.Errorf("Unable to execute '%s': %s", cmd, err.Error()))
 				}
 
 				file.Env[key] = strings.TrimRight(string(out), "\n\r\t ")
@@ -54,7 +55,7 @@ func main() {
 			} else if value == "<" {
 				if os.Getenv(key) == "" {
 					failed = true
-					uxPrintError(fmt.Errorf("Missing required %s environment variable", key))
+					UxPrintError(fmt.Errorf("Missing required %s environment variable", key))
 				}
 			}
 		}
@@ -81,7 +82,7 @@ func main() {
 	// Prepare configuration
 	config, err := CreateConfig()
 	if err != nil {
-		uxPrintError(err)
+		UxPrintError(err)
 		return
 	}
 	if *fTempDir != "" {
@@ -90,7 +91,7 @@ func main() {
 	for _, checklist := range checklists {
 		err = config.AddChecklistFile(checklist)
 		if err != nil {
-			uxPrintError(err)
+			UxPrintError(err)
 			return
 		}
 	}
@@ -99,14 +100,14 @@ func main() {
 	// environment.
 	runner, err := CreateRunner(config)
 	if err != nil {
-		uxPrintError(err)
+		UxPrintError(err)
 		return
 	}
 
 	// Check if all the required utilities exst
-	missing := runner.getMissingTools()
+	missing := runner.GetMissingTools()
 	if len(missing) > 0 {
-		uxPrintError(fmt.Errorf("There are missing executables from your path:"))
+		UxPrintError(fmt.Errorf("There are missing executables from your path:"))
 		for _, name := range missing {
 			fmt.Printf(" ‣ Did not find '%s'\n", name)
 		}
@@ -127,33 +128,33 @@ func main() {
 
 	failure := false
 	for _, item := range allItems[:*fSkipPtr] {
-		uxBlankItem(&item)
+		UxBlankItem(&item)
 	}
 	for _, item := range allItems[*fSkipPtr:] {
 		if failure {
-			uxSkipItem(&item, "ABORTED")
+			UxSkipItem(&item, "ABORTED")
 		} else {
 
 			if *fAutoPtr {
 				// Perform passive checks if we are running in auto mode
-				if !canCheckItem(&item) {
-					uxSkipItem(&item, "NO CHECKS")
+				if !CanCheckItem(&item) {
+					UxSkipItem(&item, "NO CHECKS")
 				} else {
-					value, serr, ok, err := runItemCheck(&item, runner)
+					value, serr, ok, err := RunItemCheck(&item, runner)
 					if err != nil {
-						uxFailItem(&item, err.Error(), serr)
+						UxFailItem(&item, err.Error(), serr)
 						failure = true
 					} else if !ok {
-						uxFailItem(&item, value, serr)
+						UxFailItem(&item, value, serr)
 						failure = true
 					} else {
-						uxPassItem(&item, value)
+						UxPassItem(&item, value)
 					}
 				}
 
 			} else {
 				// Otherwise go through the UI
-				if !uxCheckItem(&item, runner) {
+				if !UxCheckItem(&item, runner) {
 					failure = true
 				}
 			}
