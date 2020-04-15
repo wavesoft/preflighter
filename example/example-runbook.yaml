@@ -1,0 +1,14 @@
+title: Runbook Checks
+
+# Define which steps to append from the runbook.
+#
+# Note that for this to work you must have configured the following
+# environment variables according to your environment:
+#
+# RUNBOOK_URL = <Runbook URL>
+# RUNBOOK_KEY = <Private Authntication Token>
+#
+runbook_steps:
+  - frontend.update
+
+# (You don't need anything else)
