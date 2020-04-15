@@ -159,11 +159,13 @@ func (c *RunbookClient) GetVariables(domain string) (map[string]string, error) {
  */
 func (c *RunbookClient) ChecklistFromRunbook(step string) (Checklist, error) {
 	rxBlock := regexp.MustCompile(`\x60\x60\x60sh([\w\W]*)\x60\x60\x60`)
-	var checklist Checklist = nil
-	var checklists []struct {
-		Id    string `json:"id"`
-		Title string `json:"title"`
+	type RunbookChecklistItem struct {
+		Id     string `json:"id"`
+		Title  string `json:"title"`
+		Status int    `json:"status"`
 	}
+	var checklist Checklist = nil
+	var checklists []RunbookChecklistItem
 	var stepInfo struct {
 		Component    string `json:"component"`
 		Instructions string `json:"instructions"`
@@ -191,9 +193,34 @@ func (c *RunbookClient) ChecklistFromRunbook(step string) (Checklist, error) {
 		return nil, err
 	}
 
+	// Get all the items from the markdown in order to preserve the order
+	rx := regexp.MustCompile(`{!([^}]+)}`)
+	ids := rx.FindAllStringSubmatch(stepInfo.Instructions, -1)
+
+	var orderedChecklists []*RunbookChecklistItem
+	var found *RunbookChecklistItem = nil
+	for _, match := range ids {
+		found = nil
+		for _, item := range checklists {
+			// Don't include completed and skipped items
+			if item.Status == 1 || item.Status == 3 {
+				continue
+			}
+			if item.Id == match[1] {
+				found = &item
+				break
+			}
+		}
+
+		if found != nil {
+			orderedChecklists = append(orderedChecklists, found)
+		}
+	}
+
 	// And for each step extract the respective markdown checklist item text
 	// from the instructions markdown
-	for _, item := range checklists {
+	for _, item := range orderedChecklists {
+
 		rx := regexp.MustCompile(fmt.Sprintf(`{!%s}([\w\W]+?)([\r\n]\s*\*|$)`, item.Id))
 		parts := rx.FindStringSubmatch(stepInfo.Instructions)
 		if parts == nil {

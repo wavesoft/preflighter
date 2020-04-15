@@ -29,6 +29,16 @@ func main() {
 	useRunbook := false
 	var checklistFiles []*ChecklistFile
 	for _, fname := range flag.Args() {
+		if strings.HasPrefix(fname, "runbook:") {
+			stepId := fname[8:]
+			useRunbook = true
+			checklistFiles = append(checklistFiles, &ChecklistFile{
+				Title:        "Runbook Checklist",
+				RunbookSteps: []string{stepId},
+			})
+			continue
+		}
+
 		checklist, err := LoadChecklist(fname)
 		if err != nil {
 			UxPrintError(err)
