@@ -1,6 +1,6 @@
 title: Runbook Checks
 
-# Define which steps to append from the runbook.
+# Define which steps to import from the runbook.
 #
 # Note that for this to work you must have configured the following
 # environment variables according to your environment:
@@ -11,4 +11,36 @@ title: Runbook Checks
 runbook_steps:
   - frontend.update
 
-# (You don't need anything else)
+# * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+# The statement above is going to query runbook and import the actionable
+# items from the declared step(s) into a virtual checklist.
+#
+# Alternatively (or additionally) you can specify one or more 'regular'
+# actionable items that have a reflection to the
+
+# * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+checklist:
+
+  - title: "Creating 100 apps"
+
+    # You can have more elaborate scripts that you do not want to keep
+    # in the runbook, but you can still use the runbook integration to report
+    # back to it the status.
+    script: |
+      for i in `seq 1 100`; do
+        echo "Creating app ${i}..."
+        cat <<APP > app.json
+        {
+          "id": "marathon-app-${i}",
+          ...
+        }
+        APP
+        dcos app create app.json
+      done
+
+    # You can make this item report the outcome to runbook by specifying
+    # a step + chcklist item ID:
+    runbook_step: edgelb.preflight
+    runbook_id: create-100-apps
