@@ -12,6 +12,9 @@ import (
 )
 
 func main() {
+	var runbook *RunbookClient = nil
+	var err error = nil
+
 	fTempDir := flag.String("temp", "", "keep temporary files in the given directory")
 	fSkipPtr := flag.Int("s", 0, "the number of items to skip")
 	fListPtr := flag.Bool("l", false, "list the items and exit")
@@ -23,19 +26,40 @@ func main() {
 	}
 
 	// Read the checklists from the given arguments
-	var checklists []*ChecklistFile
+	useRunbook := false
+	var checklistFiles []*ChecklistFile
 	for _, fname := range flag.Args() {
 		checklist, err := LoadChecklist(fname)
 		if err != nil {
 			UxPrintError(err)
 			return
 		}
-		checklists = append(checklists, checklist)
+
+		// Check if runbook is needed
+		if len(checklist.RunbookSteps) > 0 {
+			useRunbook = true
+		}
+		for _, step := range checklist.Checklist {
+			if step.RunbookID != "" {
+				useRunbook = true
+			}
+		}
+
+		checklistFiles = append(checklistFiles, checklist)
+	}
+
+	// Create runbook instance if needed
+	if useRunbook {
+		runbook, err = CreateRunbookClientWithEnvConfig()
+		if err != nil {
+			UxPrintError(fmt.Errorf("Could not use runbook: %s", err.Error()))
+			os.Exit(1)
+		}
 	}
 
 	// Check for required environment variables
 	failed := false
-	for _, file := range checklists {
+	for _, file := range checklistFiles {
 		for key, value := range file.Env {
 			if strings.HasPrefix(value, "${") {
 				if len(value) < 3 {
@@ -64,10 +88,25 @@ func main() {
 		os.Exit(1)
 	}
 
+	// If we have runbook items in the checklist append it now
+	for _, list := range checklistFiles {
+		if len(list.RunbookSteps) > 0 {
+			for _, step := range list.RunbookSteps {
+				checklist, err := runbook.ChecklistFromRunbook(step)
+				if err != nil {
+					UxPrintError(fmt.Errorf("Could not fetch checklist for step %s: %s", step, err.Error()))
+					os.Exit(1)
+				}
+
+				list.Checklist = append(list.Checklist, checklist...)
+			}
+		}
+	}
+
 	// Check if we should just list and exit
 	if *fListPtr {
 		i := 0
-		for _, list := range checklists {
+		for _, list := range checklistFiles {
 			fmt.Printf("In %s (%s):\n", list.Filename, list.Title)
 			for _, item := range list.Checklist {
 				i += 1
@@ -88,7 +127,7 @@ func main() {
 	if *fTempDir != "" {
 		config.UserTempDir = *fTempDir
 	}
-	for _, checklist := range checklists {
+	for _, checklist := range checklistFiles {
 		err = config.AddChecklistFile(checklist)
 		if err != nil {
 			UxPrintError(err)
@@ -115,12 +154,12 @@ func main() {
 	}
 
 	fmt.Println("==========================================")
-	fmt.Printf(" %s Pre-Flight Checklist\n", checklists[0].Title)
+	fmt.Printf(" %s Pre-Flight Checklist\n", checklistFiles[0].Title)
 	fmt.Println("==========================================")
 	fmt.Println()
 
 	var allItems []ChecklistItem
-	for _, list := range checklists {
+	for _, list := range checklistFiles {
 		for _, item := range list.Checklist {
 			allItems = append(allItems, item)
 		}
@@ -154,8 +193,25 @@ func main() {
 
 			} else {
 				// Otherwise go through the UI
-				if !UxCheckItem(&item, runner) {
+				ok, result := UxCheckItem(&item, runner)
+				if !ok {
 					failure = true
+					if item.RunbookID != "" {
+						reason := "Script failed with:\n```\n" + result.Stdout + "\n---\n" + result.Stderr + "\n```\n"
+						runbook.ChecklistItemUpdate(
+							item.RunbookStep,
+							item.RunbookID,
+							2, // Failed
+							reason,
+						)
+					}
+				} else {
+					runbook.ChecklistItemUpdate(
+						item.RunbookStep,
+						item.RunbookID,
+						1, // Completed
+						"",
+					)
 				}
 			}
 		}

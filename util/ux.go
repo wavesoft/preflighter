@@ -27,6 +27,11 @@ type winsize struct {
 	Ypixel uint16
 }
 
+type CheckResult struct {
+	Stdout string
+	Stderr string
+}
+
 func getWidth() uint {
 	ws := &winsize{}
 	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
@@ -210,12 +215,17 @@ func UxFailItem(item *ChecklistItem, value string, cerr string) {
 	fmt.Println()
 }
 
-func UxCheckItem(item *ChecklistItem, runner *Runner) bool {
+func UxCheckItem(item *ChecklistItem, runner *Runner) (bool, CheckResult) {
+	var res CheckResult
 	for {
 		moni := createPendingMonitor(item, 10*time.Second)
 		moni.Start()
 		runner.StderrCallback = moni.HandleLine
 		sout, serr, err := RunItemScript(item, runner)
+
+		res.Stdout = sout
+		res.Stderr = serr
+
 		moni.Stop()
 		if err != nil {
 			rewindLine()
@@ -232,7 +242,7 @@ func UxCheckItem(item *ChecklistItem, runner *Runner) bool {
 
 			switch c {
 			case "N", "n":
-				return false
+				return false, res
 			}
 			continue
 		}
@@ -248,13 +258,13 @@ func UxCheckItem(item *ChecklistItem, runner *Runner) bool {
 				rewindLine()
 				printLine(SUCCESS, item.Title, sout, "PASS")
 				fmt.Println()
-				return true
+				return true, res
 
 			case "s", "S":
 				rewindLine()
 				printLine(SKIP, item.Title, sout, "SKIP")
 				fmt.Println()
-				return true
+				return true, res
 
 			case "v", "V":
 				fmt.Println()
@@ -267,7 +277,7 @@ func UxCheckItem(item *ChecklistItem, runner *Runner) bool {
 				rewindLine()
 				printLine(ERROR, item.Title, sout, "FAIL")
 				fmt.Println()
-				return false
+				return false, res
 			}
 		}
 

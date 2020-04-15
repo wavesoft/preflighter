@@ -13,6 +13,9 @@ type ChecklistItem struct {
 
 	ExpectMatch  string `yaml:"expect"`
 	ExpectScript string `yaml:"expect_script"`
+
+	RunbookID   string `yaml:"runbook_id"`
+	RunbookStep string `yaml:"runbook_step"`
 }
 
 type Checklist = []ChecklistItem
@@ -23,6 +26,7 @@ type ChecklistFile struct {
 	Libs         []string
 	Env          map[string]string `yaml:"vars"`
 	RequireTools []string          `yaml:"require_tools"`
+	RunbookSteps []string          `yaml:"runbook_steps"`
 	Filename     string            `yaml:"-"`
 }
 
